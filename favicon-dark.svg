@@ -1,0 +1,6 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- shhosting.net favicon source — simplified for small-size legibility (dark) -->
+  <path d="M25 40 C17 40 11 34 11 27 C11 20 17 14 24 14 C26 6 35 1 45 1 C56 1 65 8 67 17 C75 17 81 23 81 30 C81 37 75 40 68 40 Z" fill="#e2e8f0"/>
+  <path d="M22 40 L22 84 L70 84 L70 40" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+  <rect x="35" y="54" width="22" height="16" rx="3" fill="#d97706"/>
+</svg>

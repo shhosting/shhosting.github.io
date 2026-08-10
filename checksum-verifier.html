@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checksum Verifier — shhosting.net</title>
+<meta name="description" content="Verify a file's SHA-256, SHA-1, SHA-384, or SHA-512 checksum locally in your browser. Nothing is uploaded.">
+
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-light.svg" type="image/svg+xml" media="(prefers-color-scheme: light)">
+<link rel="icon" href="/favicon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1720" media="(prefers-color-scheme: dark)">
+
+<meta property="og:title" content="Checksum Verifier — shhosting.net">
+<meta property="og:description" content="Verify a file's checksum locally in your browser. Nothing is uploaded.">
+<meta property="og:image" content="https://shhosting.net/assets/img/og-image.png">
+<meta property="og:url" content="https://shhosting.net/checksum-verifier">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="stylesheet" href="/assets/css/style.css">
+<style>
+  /* Checksum Verifier — page-scoped styles.
+     Structural/behavioral CSS (layout, states) kept from the original standalone tool.
+     Color values now source from the shared site variables (assets/css/style.css)
+     plus a small set of --cv-* variables for tones the shared sheet doesn't define,
+     so the tool is dark/light aware like the rest of the site. */
+
+  :root {
+    --cv-panel: var(--surface);
+    --cv-panel-raised: #eef2f7;
+    --cv-line: var(--border);
+    --cv-line-bright: #cbd5e1;
+    --cv-text: var(--structure);
+    --cv-text-dim: #64748b;
+    --cv-text-faint: #94a3b8;
+
+    --cv-accent: var(--accent);
+    --cv-accent-hover: var(--accent-outline);
+    --cv-accent-soft: rgba(217, 119, 6, 0.10);
+    --cv-accent-muted: rgba(217, 119, 6, 0.45);
+    --cv-btn-text: #0f1720;
+
+    --cv-good: #15803d;
+    --cv-good-dim: rgba(21, 128, 61, 0.10);
+    --cv-bad: #b91c1c;
+    --cv-bad-dim: rgba(185, 28, 28, 0.10);
+    --cv-warn-text: var(--accent-outline);
+    --cv-warn-dim: rgba(217, 119, 6, 0.10);
+    --cv-warn-border: rgba(217, 119, 6, 0.35);
+    --cv-code-row-bg: rgba(15, 23, 42, 0.05);
+
+    --cv-radius: 10px;
+    --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --cv-panel-raised: #1c252a;
+      --cv-line-bright: #3a464d;
+      --cv-text-dim: #8b9aa1;
+      --cv-text-faint: #5c6970;
+
+      --cv-accent-hover: #f2a94d;
+
+      --cv-good: #4fd1a5;
+      --cv-good-dim: rgba(79, 209, 165, 0.12);
+      --cv-bad: #e5646d;
+      --cv-bad-dim: rgba(229, 100, 109, 0.12);
+      --cv-warn-text: #f0c480;
+      --cv-warn-dim: rgba(227, 162, 60, 0.12);
+      --cv-warn-border: rgba(227, 162, 60, 0.35);
+      --cv-code-row-bg: rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  /* This page's content is left-aligned and top-anchored, unlike the
+     centered under-construction/404 layouts, so override main here. */
+  main.verifier-main {
+    justify-content: flex-start;
+    text-align: left;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .app { width: 100%; max-width: 560px; }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--cv-good);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cv-good);
+    box-shadow: 0 0 8px var(--cv-good);
+  }
+
+  .app h1 {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    color: var(--cv-text);
+    text-transform: none;
+  }
+
+  .sub {
+    color: var(--cv-text-dim);
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin: 0 0 32px;
+    max-width: 46ch;
+  }
+
+  .card {
+    background: var(--cv-panel);
+    border: 1px solid var(--cv-line);
+    border-radius: var(--cv-radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--cv-line-bright);
+    border-radius: var(--cv-radius);
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    outline-offset: 3px;
+  }
+  .dropzone:hover { border-color: var(--cv-accent-muted); }
+  .dropzone.drag { border-color: var(--cv-accent); background: var(--cv-accent-soft); }
+  .dropzone:focus-visible { outline: 2px solid var(--cv-accent); }
+
+  .dropzone .hint {
+    font-size: 14px;
+    color: var(--cv-text);
+    margin-bottom: 4px;
+  }
+  .dropzone .hint2 {
+    font-size: 12.5px;
+    color: var(--cv-text-faint);
+  }
+
+  .filerow {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    background: var(--cv-panel-raised);
+    border: 1px solid var(--cv-line);
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  .filerow.show { display: flex; }
+  .filerow .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--cv-text);
+  }
+  .filerow .size { color: var(--cv-text-faint); flex-shrink: 0; }
+  .filerow button {
+    background: none;
+    border: none;
+    color: var(--cv-text-faint);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 4px;
+  }
+  .filerow button:hover { color: var(--cv-bad); }
+
+  .warning-banner {
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--cv-warn-dim);
+    border: 1px solid var(--cv-warn-border);
+    border-radius: 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--cv-warn-text);
+  }
+  .warning-banner.show { display: flex; }
+
+  .native-tool-panel {
+    display: none;
+    margin-top: 12px;
+    padding: 14px;
+    background: var(--cv-warn-dim);
+    border: 1px solid var(--cv-warn-border);
+    border-radius: 8px;
+  }
+  .native-tool-panel.show { display: block; }
+  .ntp-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--cv-warn-text);
+    margin-bottom: 6px;
+  }
+  .ntp-desc {
+    font-size: 12.5px;
+    color: var(--cv-text-dim);
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+  .ntp-label {
+    font-size: 11px;
+    color: var(--cv-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 10px 0 4px;
+  }
+  .ntp-label:first-of-type { margin-top: 0; }
+
+  .app label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--cv-text-dim);
+    margin: 18px 0 7px;
+  }
+  .app label:first-of-type { margin-top: 4px; }
+
+  .app select, .app input[type="text"] {
+    width: 100%;
+    background: var(--cv-panel-raised);
+    border: 1px solid var(--cv-line);
+    color: var(--cv-text);
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 13.5px;
+    font-family: var(--font-mono);
+    outline-offset: 2px;
+  }
+  .app select:focus-visible, .app input[type="text"]:focus-visible { outline: 2px solid var(--cv-accent); border-color: var(--cv-accent-hover); }
+  .app select { font-family: inherit; cursor: pointer; }
+  .app input[type="text"]::placeholder { color: var(--cv-text-faint); font-family: inherit; }
+  .app input[type="text"].invalid { border-color: var(--cv-bad); }
+
+  .field-hint {
+    min-height: 16px;
+    font-size: 12px;
+    color: var(--cv-bad);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  .verify-btn {
+    width: 100%;
+    margin-top: 18px;
+    background: var(--cv-accent);
+    color: var(--cv-btn-text);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14.5px;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .verify-btn:hover { background: var(--cv-accent-hover); }
+  .verify-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .verify-btn.loading { animation: pulse 1.2s ease-in-out infinite; }
+  .verify-btn:focus-visible { outline: 2px solid var(--cv-text); outline-offset: 2px; }
+
+  .spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(15, 23, 32, 0.35);
+    border-top-color: var(--cv-btn-text);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .verify-btn.loading .spinner { display: inline-block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.75; } }
+
+  .msg {
+    font-size: 12.5px;
+    color: var(--cv-bad);
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  .result {
+    display: none;
+    border-radius: var(--cv-radius);
+    padding: 18px 20px;
+    border: 1px solid var(--cv-line);
+  }
+  .result.show { display: block; }
+  .result.match { border-color: var(--cv-good-dim); background: var(--cv-good-dim); }
+  .result.mismatch { border-color: var(--cv-bad-dim); background: var(--cv-bad-dim); }
+
+  .result .status {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .result.match .status { color: var(--cv-good); }
+  .result.mismatch .status { color: var(--cv-bad); }
+
+  .code-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--cv-code-row-bg);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .code-row + .code-row { margin-top: 6px; }
+  .code-row .val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    word-break: break-all;
+    color: var(--cv-text);
+    line-height: 1.5;
+  }
+  .code-row button {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--cv-line-bright);
+    color: var(--cv-text-dim);
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .code-row button:hover { color: var(--cv-text); border-color: var(--cv-text-dim); }
+
+  .foot {
+    font-size: 12px;
+    color: var(--cv-text-faint);
+    text-align: center;
+    margin-top: 24px;
+    line-height: 1.6;
+  }
+
+  .ai-disclaimer {
+    max-width: 60ch;
+    margin: 0 auto 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <a class="brand-link" href="/" aria-label="shhosting.net home">
+      <img class="logo-icon theme-swap light" src="/assets/img/logo-light.svg" alt="">
+      <img class="logo-icon theme-swap dark" src="/assets/img/logo-dark.svg" alt="">
+      <img class="logo-wordmark theme-swap light" src="/assets/img/wordmark-light.svg" alt="shhosting.net">
+      <img class="logo-wordmark theme-swap dark" src="/assets/img/wordmark-dark.svg" alt="shhosting.net">
+    </a>
+  </header>
+
+  <main class="verifier-main">
+<div class="app">
+  <div class="eyebrow">Runs locally &middot; nothing uploaded</div>
+  <h1>Checksum Verifier</h1>
+  <p class="sub">Pick a file, paste the hash you were given, and confirm they match — before you trust or run the file.</p>
+
+  <div class="card">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose a file or drop it here">
+      <div class="hint">Drop a file here, or click to browse</div>
+      <div class="hint2">The file is hashed in your browser and never leaves this device</div>
+    </div>
+    <input type="file" id="fileInput" style="display:none">
+    <div class="filerow" id="fileRow">
+      <span class="name" id="fileName"></span>
+      <span class="size" id="fileSize"></span>
+      <button id="clearFile" aria-label="Remove file">✕</button>
+    </div>
+    <div class="warning-banner" id="largeFileWarning" role="alert"></div>
+    <div class="native-tool-panel" id="nativeToolPanel" role="alert"></div>
+
+    <label for="algoSelect">Algorithm</label>
+    <select id="algoSelect">
+      <option value="SHA-256" selected>SHA-256</option>
+      <option value="SHA-1">SHA-1</option>
+      <option value="SHA-384">SHA-384</option>
+      <option value="SHA-512">SHA-512</option>
+    </select>
+    <div class="warning-banner" id="sha1Warning" role="alert">⚠️ SHA-1 is cryptographically weak. Use only for accidental corruption checks, not for verifying software authenticity.</div>
+
+    <label for="hashInput">Expected hash</label>
+    <input type="text" id="hashInput" placeholder="Paste the hash to check against" autocomplete="off" spellcheck="false">
+    <div class="field-hint" id="hashHint" aria-live="polite"></div>
+
+    <button class="verify-btn" id="verifyBtn">
+      <span id="verifyLabel">Verify</span>
+      <span class="spinner" id="verifySpinner" aria-hidden="true"></span>
+    </button>
+    <div class="msg" id="msg" aria-live="polite"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="status" id="status"></div>
+    <div class="code-row">
+      <div class="val" id="computedVal"></div>
+      <button id="copyBtn">Copy</button>
+    </div>
+  </div>
+
+  <div class="foot">Uses the browser's built-in Web Crypto API. No network request is made with your file or its hash. The whole file is read into memory to hash it, so very large files can be slow or, past a point, fail outright.</div>
+</div>
+  </main>
+
+  <footer>
+    <p class="ai-disclaimer">Built with the help of various AI agents, models, and platforms.</p>
+    &copy; 2026 shhosting.net &middot; Hosted on <a href="https://pages.github.com/">GitHub Pages</a> &middot; Built with <a href="https://claude.ai">Claude</a>
+  </footer>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileRow = document.getElementById('fileRow');
+  const fileName = document.getElementById('fileName');
+  const fileSize = document.getElementById('fileSize');
+  const clearFile = document.getElementById('clearFile');
+  const largeFileWarning = document.getElementById('largeFileWarning');
+  const nativeToolPanel = document.getElementById('nativeToolPanel');
+  const algoSelect = document.getElementById('algoSelect');
+  const sha1Warning = document.getElementById('sha1Warning');
+  const hashInput = document.getElementById('hashInput');
+  const hashHint = document.getElementById('hashHint');
+  const verifyBtn = document.getElementById('verifyBtn');
+  const verifyLabel = document.getElementById('verifyLabel');
+  const msg = document.getElementById('msg');
+  const result = document.getElementById('result');
+  const status = document.getElementById('status');
+  const computedVal = document.getElementById('computedVal');
+  const copyBtn = document.getElementById('copyBtn');
+
+  // 500MB: hashing still works fine on most machines, just a heads-up it may take a moment.
+  const ADVISORY_BYTES = 500 * 1024 * 1024;
+  // 2GB: a rough, device-dependent point past which reading the whole file into one
+  // in-memory buffer starts to risk a browser out-of-memory failure. Past this we
+  // steer toward native tools rather than let the browser attempt (and maybe fail).
+  const NATIVE_RECOMMENDED_BYTES = 2 * 1024 * 1024 * 1024;
+  const HASH_LENGTHS = { 'SHA-1': 40, 'SHA-256': 64, 'SHA-384': 96, 'SHA-512': 128 };
+  const ALGO_CLI = {
+    'SHA-1':   { certutil: 'SHA1',   shasum: '1',   coreutils: 'sha1sum'   },
+    'SHA-256': { certutil: 'SHA256', shasum: '256', coreutils: 'sha256sum' },
+    'SHA-384': { certutil: 'SHA384', shasum: '384', coreutils: 'sha384sum' },
+    'SHA-512': { certutil: 'SHA512', shasum: '512', coreutils: 'sha512sum' }
+  };
+
+  let selectedFile = null;
+  let cache = {}; // algo -> hex digest for current file
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let i = -1;
+    do { bytes /= 1024; i++; } while (bytes >= 1024 && i < units.length - 1);
+    return bytes.toFixed(1) + ' ' + units[i];
+  }
+
+  function normalizeHash(str) {
+    return str.replace(/\s+/g, '').toLowerCase();
+  }
+
+  function validateHash(normalized, algo) {
+    if (!normalized) return { valid: false, empty: true, message: '' };
+    if (!/^[0-9a-f]+$/.test(normalized)) {
+      return { valid: false, empty: false, message: 'Expected hash must contain only hexadecimal characters (0-9, a-f).' };
+    }
+    const expectedLen = HASH_LENGTHS[algo];
+    if (normalized.length !== expectedLen) {
+      return {
+        valid: false,
+        empty: false,
+        message: `Expected hash is invalid for ${algo} — must be ${expectedLen} hexadecimal characters (got ${normalized.length}).`
+      };
+    }
+    return { valid: true, empty: false, message: '' };
+  }
+
+  function refreshHashHint() {
+    const normalized = normalizeHash(hashInput.value);
+    const check = validateHash(normalized, algoSelect.value);
+    if (check.empty) {
+      hashHint.textContent = '';
+      hashInput.classList.remove('invalid');
+    } else if (!check.valid) {
+      hashHint.textContent = check.message;
+      hashInput.classList.add('invalid');
+    } else {
+      hashHint.textContent = '';
+      hashInput.classList.remove('invalid');
+    }
+  }
+
+  function refreshSha1Warning() {
+    sha1Warning.classList.toggle('show', algoSelect.value === 'SHA-1');
+  }
+
+  // Per-shell filename quoting. Each shell has different escaping rules, so a filename
+  // containing a literal quote character needs different treatment per target — one
+  // wrap-in-double-quotes-for-everything scheme is not safe across all of them.
+  //
+  // PowerShell and POSIX shells (bash/zsh) both treat single-quoted strings as fully
+  // literal, so wrapping in single quotes and doubling (PowerShell) or '\''-escaping
+  // (POSIX) any embedded single quote is sufficient and keeps the common case
+  // (no quotes in the name) looking unchanged.
+  //
+  // cmd.exe has no literal-string quoting mechanism at all — doubling embedded double
+  // quotes inside a double-quoted argument is the conventional workaround, though note
+  // cmd.exe still treats characters like % & ^ | specially even inside quotes; this
+  // covers the reported quote-breaking case, not full cmd.exe metacharacter safety.
+  function quoteForPowerShell(name) {
+    return "'" + name.replace(/'/g, "''") + "'";
+  }
+  function quoteForCmd(name) {
+    return '"' + name.replace(/"/g, '""') + '"';
+  }
+  function quoteForPosixShell(name) {
+    return "'" + name.replace(/'/g, "'\\''") + "'";
+  }
+
+  // Builds {label, cmd} entries for the native-tool panel. fileNameStr comes from the
+  // browser's File object (attacker-controllable if a malicious filename is crafted),
+  // so it is only ever inserted via textContent below — never via innerHTML.
+  function buildNativeCommands(fileNameStr, algo) {
+    const cli = ALGO_CLI[algo] || ALGO_CLI['SHA-256'];
+    const psName = quoteForPowerShell(fileNameStr);
+    const cmdName = quoteForCmd(fileNameStr);
+    const posixName = quoteForPosixShell(fileNameStr);
+    return [
+      { label: 'Windows — PowerShell', cmd: `certutil -hashfile ${psName} ${cli.certutil}` },
+      { label: 'Windows — Command Prompt', cmd: `certutil -hashfile ${cmdName} ${cli.certutil}` },
+      { label: 'macOS — Terminal', cmd: `shasum -a ${cli.shasum} ${posixName}` },
+      { label: 'Linux — Terminal', cmd: `${cli.coreutils} ${posixName}` }
+    ];
+  }
+
+  function renderNativePanel(fileNameStr, algo) {
+    nativeToolPanel.textContent = '';
+
+    const title = document.createElement('div');
+    title.className = 'ntp-title';
+    title.textContent = '⚠️ Large file — the browser may run out of memory hashing this in one go.';
+    nativeToolPanel.appendChild(title);
+
+    const desc = document.createElement('div');
+    desc.className = 'ntp-desc';
+    desc.textContent = 'It\u2019s safer to verify it with a native command-line tool instead. Run one of these from the folder containing the file (browsers don\u2019t expose the full file path, for security reasons):';
+    nativeToolPanel.appendChild(desc);
+
+    buildNativeCommands(fileNameStr, algo).forEach(entry => {
+      const label = document.createElement('div');
+      label.className = 'ntp-label';
+      label.textContent = entry.label;
+      nativeToolPanel.appendChild(label);
+
+      const row = document.createElement('div');
+      row.className = 'code-row';
+
+      const code = document.createElement('div');
+      code.className = 'val';
+      code.textContent = entry.cmd;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', async () => {
+        const ok = await copyToClipboard(entry.cmd);
+        btn.textContent = ok ? 'Copied' : 'Failed to copy';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1400);
+      });
+
+      row.appendChild(code);
+      row.appendChild(btn);
+      nativeToolPanel.appendChild(row);
+    });
+  }
+
+  function updateLargeFileUI() {
+    if (!selectedFile) {
+      largeFileWarning.classList.remove('show');
+      nativeToolPanel.classList.remove('show');
+      return;
+    }
+    if (selectedFile.size > NATIVE_RECOMMENDED_BYTES) {
+      largeFileWarning.classList.remove('show');
+      renderNativePanel(selectedFile.name, algoSelect.value);
+      nativeToolPanel.classList.add('show');
+    } else if (selectedFile.size > ADVISORY_BYTES) {
+      nativeToolPanel.classList.remove('show');
+      largeFileWarning.textContent = '⚠️ Large file detected (over 500 MB). Hashing may take a moment and use noticeable memory.';
+      largeFileWarning.classList.add('show');
+    } else {
+      largeFileWarning.classList.remove('show');
+      nativeToolPanel.classList.remove('show');
+    }
+  }
+
+  function setFile(file) {
+    selectedFile = file;
+    cache = {};
+    result.classList.remove('show', 'match', 'mismatch');
+    msg.textContent = '';
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    fileRow.classList.add('show');
+    updateLargeFileUI();
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  // Nested drag state via an enter/leave counter rather than e.relatedTarget: for a real
+  // file dragged in from the OS (our main case), browsers commonly report relatedTarget
+  // as null on dragenter/dragleave, which would make a containment check unreliable and
+  // just remove the class every time. A counter doesn't depend on relatedTarget at all —
+  // entering a child fires dragleave(dropzone)+dragenter(child, bubbles) back-to-back in
+  // the same tick, so the count dips and recovers before the next paint, with no flicker.
+  let dragDepth = 0;
+
+  dropzone.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragDepth++;
+    dropzone.classList.add('drag');
+  });
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault(); // required for 'drop' to fire; does not affect dragDepth
+  });
+  dropzone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) dropzone.classList.remove('drag');
+  });
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    dropzone.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  clearFile.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectedFile = null;
+    cache = {};
+    fileInput.value = '';
+    fileRow.classList.remove('show');
+    result.classList.remove('show', 'match', 'mismatch');
+    updateLargeFileUI();
+  });
+
+  algoSelect.addEventListener('change', () => {
+    result.classList.remove('show', 'match', 'mismatch');
+    refreshSha1Warning();
+    refreshHashHint();
+    updateLargeFileUI();
+  });
+
+  hashInput.addEventListener('input', refreshHashHint);
+  hashInput.addEventListener('paste', () => setTimeout(refreshHashHint, 0));
+
+  async function hashFile(file, algo) {
+    let buffer;
+    try {
+      buffer = await file.arrayBuffer();
+    } catch (err) {
+      throw new Error('READ_FAILED');
+    }
+
+    let digest;
+    try {
+      digest = await crypto.subtle.digest(algo, buffer);
+    } catch (err) {
+      if (err instanceof RangeError) throw new Error('MEMORY_LIMIT');
+      throw new Error('HASH_FAILED');
+    }
+
+    return Array.from(new Uint8Array(digest))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  function setLoading(isLoading) {
+    verifyBtn.disabled = isLoading;
+    verifyBtn.classList.toggle('loading', isLoading);
+    verifyLabel.textContent = isLoading ? 'Computing…' : 'Verify';
+  }
+
+  verifyBtn.addEventListener('click', async () => {
+    msg.textContent = '';
+
+    if (!selectedFile) { msg.textContent = 'Choose a file first.'; return; }
+
+    const algo = algoSelect.value;
+    const normalized = normalizeHash(hashInput.value);
+    const check = validateHash(normalized, algo);
+
+    if (check.empty) { msg.textContent = 'Paste the expected hash first.'; hashInput.focus(); return; }
+    if (!check.valid) { msg.textContent = check.message; hashHint.textContent = check.message; hashInput.classList.add('invalid'); hashInput.focus(); return; }
+
+    setLoading(true);
+
+    try {
+      let computed = cache[algo];
+      if (!computed) {
+        computed = await hashFile(selectedFile, algo);
+        cache[algo] = computed;
+      }
+
+      const isMatch = computed === normalized;
+      result.classList.add('show');
+      result.classList.toggle('match', isMatch);
+      result.classList.toggle('mismatch', !isMatch);
+      status.textContent = isMatch ? '✓ Match — file is intact' : '✕ No match — do not trust this file';
+      computedVal.textContent = computed;
+    } catch (err) {
+      const reason = err && err.message;
+      if (reason === 'READ_FAILED') {
+        msg.textContent = 'Unable to read file.';
+      } else if (reason === 'MEMORY_LIMIT') {
+        msg.textContent = 'File exceeds available browser memory — see the native-tool instructions above.';
+        renderNativePanel(selectedFile.name, algo);
+        nativeToolPanel.classList.add('show');
+        largeFileWarning.classList.remove('show');
+      } else {
+        msg.textContent = 'An unexpected error occurred during hashing.';
+      }
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        // fall through to legacy fallback
+      }
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    const ok = await copyToClipboard(computedVal.textContent);
+    copyBtn.textContent = ok ? 'Copied' : 'Failed to copy';
+    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1400);
+  });
+
+  hashInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') verifyBtn.click();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+/* shhosting.net — shared site styles
+   Colors sourced from BRAND REFERENCE.md; not restated elsewhere. */
+
+:root {
+  --structure: #334155;   /* light-bg value: roof/walls/main text */
+  --ground: #3f6b55;      /* light-bg value: ground/grass */
+  --accent: #d97706;      /* constant across themes */
+  --accent-outline: #b45309; /* one step darker (not in BRAND REFERENCE.md) — used only where accent needs to outline itself, since same-color strokes are invisible */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --border: #e2e8f0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --structure: #e2e8f0;  /* dark-bg value */
+    --ground: #86b8a0;     /* dark-bg value */
+    --bg: #0f1720;
+    --surface: #172230;
+    --border: #263344;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--structure);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/* Default (and fallback for browsers with no prefers-color-scheme support): light variant */
+img.theme-swap.light { display: inline-block; }
+img.theme-swap.dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  img.theme-swap.light { display: none; }
+  img.theme-swap.dark { display: inline-block; }
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 32px clamp(20px, 6vw, 64px) 0;
+}
+
+header .brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+header .brand-link:hover { opacity: 0.8; }
+
+header .logo-icon {
+  height: 76px;
+  width: auto;
+}
+
+header .logo-wordmark {
+  height: 46px;
+  width: auto;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px clamp(20px, 6vw, 64px);
+  gap: 28px;
+}
+
+.construction-graphic {
+  width: min(380px, 82vw);
+  height: auto;
+}
+
+.heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+h1 .accent {
+  color: var(--accent);
+}
+
+p.lede {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--structure);
+  opacity: 0.85;
+  font-size: 1.05rem;
+}
+
+p.note {
+  max-width: 46ch;
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.65;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 0.8rem;
+  opacity: 0.55;
+}
+
+.home-link {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--structure);
+}
+.home-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}

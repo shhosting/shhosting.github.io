@@ -1,0 +1,19 @@
+<svg width="240" height="240" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- shhosting.net logo — light background variant -->
+  <!-- roof (cloud silhouette), filled dark slate for contrast against light backgrounds -->
+  <path d="M25 40 C17 40 11 34 11 27 C11 20 17 14 24 14 C26 6 35 1 45 1 C56 1 65 8 67 17 C75 17 81 23 81 30 C81 37 75 40 68 40 Z" fill="#334155"/>
+  <!-- house walls (verticals only; bottom drawn separately, flush, no overlap) -->
+  <path d="M24 40 L24 84" fill="none" stroke="#334155" stroke-width="3"/>
+  <path d="M68 40 L68 84" fill="none" stroke="#334155" stroke-width="3"/>
+  <!-- top rack unit (outlined), LED dot in amber -->
+  <rect x="33" y="49" width="26" height="9" rx="2" fill="none" stroke="#334155" stroke-width="1.8"/>
+  <circle cx="52" cy="53.5" r="1.6" fill="#d97706"/>
+  <!-- bottom rack unit (solid amber), LED dot matches slate -->
+  <rect x="33" y="62" width="26" height="9" rx="2" fill="#d97706"/>
+  <circle cx="52" cy="66.5" r="1.6" fill="#334155"/>
+  <!-- ground line, full width, same weight as walls -->
+  <line x1="8" y1="84" x2="84" y2="84" stroke="#3f6b55" stroke-width="3"/>
+  <!-- grass tufts, darker muted green for visibility against light backgrounds -->
+  <path d="M9 84 Q11 78 13 84 M14 84 Q16 76 18 84 M19 84 Q21 79 23 84" stroke="#3f6b55" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <path d="M69 84 Q71 79 73 84 M74 84 Q76 76 78 84 M79 84 Q81 78 83 84" stroke="#3f6b55" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</svg>
