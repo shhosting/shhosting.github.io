@@ -222,6 +222,18 @@ footer {
   opacity: 0.55;
 }
 
+.footer-credit {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 6px;
+  row-gap: 4px;
+}
+
+.footer-group {
+  white-space: nowrap;
+}
+
 .home-link {
   display: inline-block;
   margin-top: 4px;
