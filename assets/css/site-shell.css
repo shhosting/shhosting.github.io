@@ -6,9 +6,9 @@
 .ai-tools-trigger { appearance: none; display: inline; margin: 0; padding: 0; border: 0; border-radius: 2px; background: transparent; color: inherit; font: inherit; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; outline-offset: 3px; }
 .ai-tools-trigger:hover, .ai-tools-trigger[aria-expanded="true"] { color: var(--accent); }
 .ai-tools-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-.ai-tools-popover { position: fixed; z-index: 1000; display: flex; flex-direction: column; width: max-content; min-width: 238px; max-width: calc(100vw - 32px); padding: 5px; background: var(--surface, #fff); color: var(--structure, #263238); border: 1px solid var(--border, #d8dee3); border-radius: 8px; box-shadow: 0 10px 28px rgba(15,23,42,.2); font-size: .84rem; line-height: 1.45; white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease, visibility .15s; }
+.ai-tools-popover { position: fixed; z-index: 1000; display: flex; flex-direction: column; width: max-content; min-width: 238px; max-width: calc(100vw - 32px); padding: 5px; background: var(--surface, #fff); color: var(--structure, #263238); border: 1px solid var(--border, #d8dee3); border-radius: 8px; box-shadow: 0 10px 28px rgba(15,23,42,.2); font-size: .84rem; line-height: 1.45; white-space: nowrap; opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, 4px); transition: opacity .15s ease, transform .15s ease, visibility .15s; }
 .ai-tools-popover[hidden] { display: none; }
-.ai-tools-popover.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
+.ai-tools-popover.is-open { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%, 0); }
 .ai-tools-link { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 5px; color: var(--structure, #263238); text-decoration: none; text-align: left; }
 .ai-tools-link:hover, .ai-tools-link:focus-visible { background: var(--bg, #f1f4f6); color: var(--accent, #315f58); text-decoration: none; outline: none; }
 .ai-tools-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 20px; color: currentColor; }
