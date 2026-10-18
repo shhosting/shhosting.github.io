@@ -139,12 +139,19 @@
       const positionPopup = () => {
         const anchor = trigger.getBoundingClientRect();
         const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-        const width = Math.min(popup.offsetWidth, viewportWidth - 32);
-        const desiredLeft = anchor.left + anchor.width / 2 - width / 2;
-        const left = Math.min(Math.max(desiredLeft, 16), viewportWidth - width - 16);
-        const top = anchor.top - popup.offsetHeight - 10;
-        popup.style.left = left + 'px';
-        popup.style.top = (top >= 12 ? top : Math.min(anchor.bottom + 10, window.innerHeight - popup.offsetHeight - 12)) + 'px';
+        const viewportHeight = window.innerHeight;
+        popup.style.left = '0px';
+        popup.style.bottom = '0px';
+        const menuRect = popup.getBoundingClientRect();
+        const halfWidth = menuRect.width / 2;
+        const desiredCenter = anchor.left + anchor.width / 2;
+        const minCenter = 16 + halfWidth;
+        const maxCenter = viewportWidth - 16 - halfWidth;
+        const center = maxCenter < minCenter
+          ? viewportWidth / 2
+          : Math.min(Math.max(desiredCenter, minCenter), maxCenter);
+        popup.style.left = center + 'px';
+        popup.style.bottom = Math.max(0, viewportHeight - anchor.top + 10) + 'px';
       };
       const openPopup = () => {
         popup.hidden = false;
